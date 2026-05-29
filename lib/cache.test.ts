@@ -260,6 +260,46 @@ describe('TTLCache', () => {
     });
   });
 
+  describe('update()', () => {
+    it('updates the value without resetting TTL', () => {
+      vi.useFakeTimers();
+      const cache = new TTLCache<number>();
+      cache.set('count', 1, 5_000);
+
+      vi.advanceTimersByTime(3_000);
+      cache.update('count', 2);
+
+      // Another 3s: total 6s from set — would be expired if TTL had been reset
+      vi.advanceTimersByTime(3_000);
+      expect(cache.get('count')).toBeNull();
+
+      cache.destroy();
+    });
+
+    it('returns true when the key exists and is not expired', () => {
+      const cache = new TTLCache<number>();
+      cache.set('count', 1, 60_000);
+      expect(cache.update('count', 2)).toBe(true);
+      expect(cache.get('count')).toBe(2);
+      cache.destroy();
+    });
+
+    it('returns false for a missing key', () => {
+      const cache = new TTLCache<number>();
+      expect(cache.update('missing', 99)).toBe(false);
+      cache.destroy();
+    });
+
+    it('returns false for an expired key', () => {
+      vi.useFakeTimers();
+      const cache = new TTLCache<number>();
+      cache.set('count', 1, 1_000);
+      vi.advanceTimersByTime(2_000);
+      expect(cache.update('count', 2)).toBe(false);
+      cache.destroy();
+    });
+  });
+
   describe('overwriting keys resets TTL', () => {
     it('resets TTL when overwriting an existing key', () => {
       vi.useFakeTimers();

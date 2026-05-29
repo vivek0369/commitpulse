@@ -55,7 +55,7 @@ export class RateLimiter {
     if (current === 0) {
       await this.cache.set(ip, 1, this.windowMs);
     } else {
-      await this.cache.set(ip, current + 1, this.windowMs);
+      await this.cache.update(ip, current + 1);
     }
     return true;
   }
@@ -84,7 +84,7 @@ export class RateLimiter {
     if (current === 0) {
       await this.cache.set(ip, 1, this.windowMs);
     } else {
-      await this.cache.set(ip, current + 1, this.windowMs);
+      await this.cache.update(ip, current + 1);
     }
     return {
       success: true,
@@ -172,7 +172,7 @@ export async function rateLimit(
   }
 
   tracker.count++;
-  await trackers.set(ip, tracker, windowMs);
+  await trackers.update(ip, tracker);
 
   if (tracker.count > limit) {
     return {

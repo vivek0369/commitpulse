@@ -48,6 +48,28 @@ describe('rateLimit', () => {
     expect(result.remaining).toBe(59);
   });
 
+  it('does not reset the window TTL on each request (fixed window)', async () => {
+    const ip = '4.5.6.7';
+    const windowMs = 60000;
+    const limit = 5;
+
+    // Make 3 requests spread across the window
+    await rateLimit(ip, limit, windowMs);
+    vi.advanceTimersByTime(20000);
+    await rateLimit(ip, limit, windowMs);
+    vi.advanceTimersByTime(20000);
+    await rateLimit(ip, limit, windowMs);
+
+    // Advance past original window start (60s from first request)
+    // If TTL was resetting, the window would still be open; it should now be closed
+    vi.advanceTimersByTime(21000); // total: 61s from first request
+
+    // Window should have expired — count resets
+    const result = await rateLimit(ip, limit, windowMs);
+    expect(result.success).toBe(true);
+    expect(result.remaining).toBe(limit - 1);
+  });
+
   it('tracks different IPs separately', async () => {
     const ip1 = '11.11.11.11';
     const ip2 = '22.22.22.22';
@@ -118,5 +140,24 @@ describe('RateLimiter', () => {
     vi.advanceTimersByTime(windowMs + 1);
 
     expect(await limiter.check('5.5.5.5')).toBe(true);
+  });
+
+  it('does not reset the window TTL on each request (fixed window)', async () => {
+    const windowMs = 60000;
+    const limiter = new RateLimiter(5, windowMs);
+    const ip = '6.6.6.6';
+
+    // Make 3 requests spread across the window
+    await limiter.check(ip);
+    vi.advanceTimersByTime(20000);
+    await limiter.check(ip);
+    vi.advanceTimersByTime(20000);
+    await limiter.check(ip);
+
+    // Advance past original window start (60s from first request)
+    vi.advanceTimersByTime(21000); // total: 61s from first request
+
+    // Window should have expired — count resets, request is allowed
+    expect(await limiter.check(ip)).toBe(true);
   });
 });
