@@ -10,9 +10,11 @@ describe('Export Snippet utilities', () => {
       const result = getExportSnippet('markdown', queryString);
 
       expect(typeof result).toBe('string');
-      expect(result.startsWith('![CommitPulse]')).toBe(true);
+      expect(result.startsWith('![CommitPulse Contribution Graph for testuser]')).toBe(true);
       expect(result).toContain(EXPECTED_BASE_URL);
-      expect(result).toBe(`![CommitPulse](${EXPECTED_BASE_URL}?${queryString})`);
+      expect(result).toBe(
+        `![CommitPulse Contribution Graph for testuser](${EXPECTED_BASE_URL}?${queryString})`
+      );
     });
 
     it('generates html snippet', () => {
@@ -22,7 +24,9 @@ describe('Export Snippet utilities', () => {
       expect(typeof result).toBe('string');
       expect(result.startsWith('<img src=')).toBe(true);
       expect(result).toContain(EXPECTED_BASE_URL);
-      expect(result).toBe(`<img src="${EXPECTED_BASE_URL}?${queryString}" alt="CommitPulse" />`);
+      expect(result).toBe(
+        `<img src="${EXPECTED_BASE_URL}?${queryString}" alt="CommitPulse Contribution Graph for testuser" />`
+      );
     });
 
     it('generates action snippet', () => {
@@ -40,7 +44,7 @@ describe('Export Snippet utilities', () => {
       const markdownResult = getExportSnippet('markdown', emptyQuery);
       const htmlResult = getExportSnippet('html', emptyQuery);
 
-      expect(markdownResult.startsWith('![CommitPulse]')).toBe(true);
+      expect(markdownResult.startsWith('![CommitPulse Contribution Graph]')).toBe(true);
       expect(markdownResult).toContain(EXPECTED_BASE_URL);
 
       expect(htmlResult.startsWith('<img src=')).toBe(true);
@@ -59,7 +63,9 @@ describe('Export Snippet utilities', () => {
       const result = getExportSnippet('markdown', complexQuery);
 
       expect(result).toContain(complexQuery);
-      expect(result).toBe(`![CommitPulse](${EXPECTED_BASE_URL}?${complexQuery})`);
+      expect(result).toBe(
+        `![CommitPulse Contribution Graph for complex%20name](${EXPECTED_BASE_URL}?${complexQuery})`
+      );
     });
 
     it('throws error for unknown format', () => {
@@ -72,7 +78,9 @@ describe('Export Snippet utilities', () => {
     it('includes placeholder username in markdown', () => {
       const result = getPlaceholderSnippet('markdown');
 
-      expect(result.startsWith('![CommitPulse]')).toBe(true);
+      expect(result.startsWith('![CommitPulse Contribution Graph for your-github-username]')).toBe(
+        true
+      );
       expect(result).toContain('your-github-username');
       expect(result).toContain(EXPECTED_BASE_URL);
     });
