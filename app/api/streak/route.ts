@@ -180,18 +180,20 @@ export async function GET(request: Request) {
       });
       calendar = orgData.calendar;
     } else {
-      calendar = await fetchGitHubContributions(user, {
+      const userData = await fetchGitHubContributions(user, {
         bypassCache: refresh,
         from,
         to,
       });
+      calendar = userData.calendar;
 
       if (versus) {
-        versusCalendar = await fetchGitHubContributions(versus, {
+        const versusData = await fetchGitHubContributions(versus, {
           bypassCache: refresh,
           from,
           to,
         });
+        versusCalendar = versusData.calendar;
       }
     }
 

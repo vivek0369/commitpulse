@@ -80,6 +80,24 @@ export interface ContributionCalendar {
 }
 
 /**
+ * Represents a user's contributions to a specific repository.
+ */
+export interface RepoContribution {
+  repository: {
+    primaryLanguage: { name: string } | null;
+  };
+  contributions: { totalCount: number };
+}
+
+/**
+ * Extended contribution data including both the calendar and repository-specific contributions.
+ */
+export interface ExtendedContributionData {
+  calendar: ContributionCalendar;
+  repoContributions: RepoContribution[];
+}
+
+/**
  * Month-over-month contribution statistics used by the monthly view.
  */
 export interface MonthlyStats {

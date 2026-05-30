@@ -167,13 +167,16 @@ describe('fetchGitHubContributions', () => {
       mockResponse({
         data: {
           user: {
-            contributionsCollection: { contributionCalendar: mockCalendar },
+            contributionsCollection: {
+              contributionCalendar: mockCalendar,
+              commitContributionsByRepository: [],
+            },
           },
         },
       })
     );
 
-    const result = await fetchGitHubContributions('octocat');
+    const { calendar: result } = await fetchGitHubContributions('octocat');
 
     expect(result.totalContributions).toBe(mockCalendar.totalContributions);
     expect(result.weeks[0].contributionDays[0].contributionCount).toBe(3);
@@ -184,7 +187,10 @@ describe('fetchGitHubContributions', () => {
       mockResponse({
         data: {
           user: {
-            contributionsCollection: { contributionCalendar: mockCalendar },
+            contributionsCollection: {
+              contributionCalendar: mockCalendar,
+              commitContributionsByRepository: [],
+            },
           },
         },
       })
@@ -214,7 +220,10 @@ describe('fetchGitHubContributions', () => {
       mockResponse({
         data: {
           user: {
-            contributionsCollection: { contributionCalendar: mockCalendar },
+            contributionsCollection: {
+              contributionCalendar: mockCalendar,
+              commitContributionsByRepository: [],
+            },
           },
         },
       })
@@ -254,7 +263,7 @@ describe('fetchGitHubContributions', () => {
       })
     );
 
-    const result = await fetchGitHubContributions('new-user');
+    const { calendar: result } = await fetchGitHubContributions('new-user');
 
     expect(result.totalContributions).toBe(0);
     expect(result.weeks).toHaveLength(0);
@@ -393,7 +402,7 @@ describe('fetchGitHubContributions', () => {
       })
     );
 
-    const result = await fetchGitHubContributions('sparse-user');
+    const { calendar: result } = await fetchGitHubContributions('sparse-user');
     expect(result.totalContributions).toBe(0);
     expect(result.weeks).toHaveLength(1);
   });
@@ -420,8 +429,8 @@ describe('fetchGitHubContributions', () => {
     const r2 = await fetchGitHubContributions('empty-user', {
       bypassCache: true,
     });
-    expect(r1.totalContributions).toBe(r2.totalContributions);
-    expect(r1.weeks).toEqual(r2.weeks);
+    expect(r1.calendar.totalContributions).toBe(r2.calendar.totalContributions);
+    expect(r1.calendar.weeks).toEqual(r2.calendar.weeks);
   });
 });
 
@@ -705,7 +714,19 @@ describe('getFullDashboardData', () => {
       return mockResponse({
         data: {
           user: {
-            contributionsCollection: { contributionCalendar: mockCalendar },
+            contributionsCollection: {
+              contributionCalendar: mockCalendar,
+              commitContributionsByRepository: [
+                {
+                  repository: { primaryLanguage: { name: 'TypeScript' } },
+                  contributions: { totalCount: 200 },
+                },
+                {
+                  repository: { primaryLanguage: { name: 'Rust' } },
+                  contributions: { totalCount: 100 },
+                },
+              ],
+            },
           },
         },
       });
@@ -784,7 +805,10 @@ describe('getFullDashboardData', () => {
       return mockResponse({
         data: {
           user: {
-            contributionsCollection: { contributionCalendar: mockCalendar },
+            contributionsCollection: {
+              contributionCalendar: mockCalendar,
+              commitContributionsByRepository: [],
+            },
           },
         },
       });
@@ -813,7 +837,10 @@ describe('getFullDashboardData', () => {
       return mockResponse({
         data: {
           user: {
-            contributionsCollection: { contributionCalendar: mockCalendar },
+            contributionsCollection: {
+              contributionCalendar: mockCalendar,
+              commitContributionsByRepository: [],
+            },
           },
         },
       });
@@ -883,7 +910,10 @@ describe('GitHub API cache behavior', () => {
       mockResponse({
         data: {
           user: {
-            contributionsCollection: { contributionCalendar: mockCalendar },
+            contributionsCollection: {
+              contributionCalendar: mockCalendar,
+              commitContributionsByRepository: [],
+            },
           },
         },
       })
@@ -916,14 +946,17 @@ describe('GitHub API cache behavior', () => {
       mockResponse({
         data: {
           user: {
-            contributionsCollection: { contributionCalendar: mockCalendar },
+            contributionsCollection: {
+              contributionCalendar: mockCalendar,
+              commitContributionsByRepository: [],
+            },
           },
         },
       })
     );
 
     const results = await requests;
-    expect(results.map((result) => result.totalContributions)).toEqual([42, 42, 42]);
+    expect(results.map((result) => result.calendar.totalContributions)).toEqual([42, 42, 42]);
   });
 
   it('dedupes rapid synchronous contribution requests until the delayed fetch resolves once', async () => {
@@ -967,7 +1000,7 @@ describe('GitHub API cache behavior', () => {
     const results = await Promise.all(requests);
 
     expect(resolveFetchSpy).toHaveBeenCalledTimes(1);
-    expect(results.map((result) => result.totalContributions)).toEqual([42, 42, 42]);
+    expect(results.map((result) => result.calendar.totalContributions)).toEqual([42, 42, 42]);
   });
 
   it('refresh bypass: bypassCache=true forces a fresh fetch', async () => {
@@ -975,7 +1008,10 @@ describe('GitHub API cache behavior', () => {
       mockResponse({
         data: {
           user: {
-            contributionsCollection: { contributionCalendar: mockCalendar },
+            contributionsCollection: {
+              contributionCalendar: mockCalendar,
+              commitContributionsByRepository: [],
+            },
           },
         },
       })
@@ -995,7 +1031,10 @@ describe('GitHub API cache behavior', () => {
       mockResponse({
         data: {
           user: {
-            contributionsCollection: { contributionCalendar: mockCalendar },
+            contributionsCollection: {
+              contributionCalendar: mockCalendar,
+              commitContributionsByRepository: [],
+            },
           },
         },
       })
@@ -1372,7 +1411,10 @@ describe('getOrgDashboardData', () => {
       return mockResponse({
         data: {
           user: {
-            contributionsCollection: { contributionCalendar: mockCalendar },
+            contributionsCollection: {
+              contributionCalendar: mockCalendar,
+              commitContributionsByRepository: [],
+            },
           },
         },
       });

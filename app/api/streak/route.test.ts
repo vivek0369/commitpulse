@@ -16,7 +16,7 @@ vi.mock('../../../utils/time', () => ({
 
 import { fetchGitHubContributions, getOrgDashboardData } from '../../../lib/github';
 import { getSecondsUntilUTCMidnight, getSecondsUntilMidnightInTimezone } from '../../../utils/time';
-import type { ContributionCalendar } from '../../../types';
+import type { ContributionCalendar, ExtendedContributionData } from '../../../types';
 
 // Two weeks of realistic data. The last day has 0 contributions so the streak
 // is in "grace period" territory — a good baseline that exercises most code paths.
@@ -59,7 +59,10 @@ function makeRequest(params: Record<string, string> = {}): Request {
 describe('GET /api/streak', () => {
   beforeEach(() => {
     vi.clearAllMocks(); // reset call counts so per-test call assertions are isolated
-    vi.mocked(fetchGitHubContributions).mockResolvedValue(mockCalendar);
+    vi.mocked(fetchGitHubContributions).mockResolvedValue({
+      calendar: mockCalendar,
+      repoContributions: [],
+    } as unknown as ExtendedContributionData);
     vi.mocked(getOrgDashboardData).mockResolvedValue({
       profile: {
         username: 'octocat',
@@ -849,12 +852,15 @@ describe('GET /api/streak', () => {
       vi.setSystemTime(new Date('2026-05-20T12:00:00Z'));
 
       vi.mocked(fetchGitHubContributions).mockResolvedValueOnce({
-        totalContributions: 25,
-        weeks: [
-          { contributionDays: [{ date: '2024-11-15', contributionCount: 10 }] },
-          { contributionDays: [{ date: '2024-12-15', contributionCount: 15 }] },
-        ],
-      } as ContributionCalendar);
+        calendar: {
+          totalContributions: 25,
+          weeks: [
+            { contributionDays: [{ date: '2024-11-15', contributionCount: 10 }] },
+            { contributionDays: [{ date: '2024-12-15', contributionCount: 15 }] },
+          ],
+        } as ContributionCalendar,
+        repoContributions: [],
+      } as unknown as ExtendedContributionData);
 
       try {
         const response = await GET(
@@ -955,12 +961,15 @@ describe('GET /api/streak', () => {
     it('applies delta_format=both to show percent and absolute values in the monthly SVG', async () => {
       // 1. Mock the GitHub fetch with actual weekly data using vi.mocked
       vi.mocked(fetchGitHubContributions).mockResolvedValueOnce({
-        totalContributions: 150,
-        weeks: [
-          { contributionDays: [{ date: '2026-04-15', contributionCount: 10 }] },
-          { contributionDays: [{ date: '2026-05-15', contributionCount: 15 }] },
-        ],
-      } as unknown as ContributionCalendar);
+        calendar: {
+          totalContributions: 150,
+          weeks: [
+            { contributionDays: [{ date: '2026-04-15', contributionCount: 10 }] },
+            { contributionDays: [{ date: '2026-05-15', contributionCount: 15 }] },
+          ],
+        } as ContributionCalendar,
+        repoContributions: [],
+      } as unknown as ExtendedContributionData);
 
       // 2. Lock the system time to May 2026 so the calendar calculation aligns
       vi.useFakeTimers();
@@ -987,12 +996,15 @@ describe('GET /api/streak', () => {
     it('applies delta_format=absolute to show raw commit counts in the monthly SVG', async () => {
       // 1. Mock the GitHub fetch with actual weekly data using vi.mocked
       vi.mocked(fetchGitHubContributions).mockResolvedValueOnce({
-        totalContributions: 150,
-        weeks: [
-          { contributionDays: [{ date: '2026-04-15', contributionCount: 10 }] },
-          { contributionDays: [{ date: '2026-05-15', contributionCount: 15 }] },
-        ],
-      } as unknown as ContributionCalendar);
+        calendar: {
+          totalContributions: 150,
+          weeks: [
+            { contributionDays: [{ date: '2026-04-15', contributionCount: 10 }] },
+            { contributionDays: [{ date: '2026-05-15', contributionCount: 15 }] },
+          ],
+        } as ContributionCalendar,
+        repoContributions: [],
+      } as unknown as ExtendedContributionData);
       // 2. Lock the system time to May 2026 so the calendar calculation aligns
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-05-20T12:00:00Z'));
@@ -1032,7 +1044,10 @@ describe('GET /api/streak', () => {
         ],
       };
 
-      vi.mocked(fetchGitHubContributions).mockResolvedValue(emptyCalendar);
+      vi.mocked(fetchGitHubContributions).mockResolvedValue({
+        calendar: emptyCalendar,
+        repoContributions: [],
+      } as unknown as ExtendedContributionData);
       const response = await GET(makeRequest({ user: 'octocat' }));
       const body = await response.text();
 
