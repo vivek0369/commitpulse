@@ -437,6 +437,16 @@ describe('GET /api/streak', () => {
       });
     });
 
+    it('passes correct from/to range when ?year=2008 is provided', async () => {
+      await GET(makeRequest({ user: 'octocat', year: '2008' }));
+
+      expect(fetchGitHubContributions).toHaveBeenCalledWith('octocat', {
+        bypassCache: false,
+        from: '2008-01-01T00:00:00Z',
+        to: '2008-12-31T23:59:59Z',
+      });
+    });
+
     it('functions normally when the year parameter is missing', async () => {
       const response = await GET(makeRequest({ user: 'octocat' }));
 
@@ -668,6 +678,17 @@ describe('GET /api/streak', () => {
       const response = await GET(makeRequest({ user: 'octocat' }));
 
       expect(response.headers.get('Cache-Control')).toBe('no-store');
+    });
+
+    it('sets the SVG Content-Security-Policy header on generic error responses', async () => {
+      vi.mocked(fetchGitHubContributions).mockRejectedValue(new Error('Network failure'));
+
+      const response = await GET(makeRequest({ user: 'octocat' }));
+      const csp = response.headers.get('Content-Security-Policy');
+
+      expect(response.status).toBe(500);
+      expect(csp).toContain("default-src 'none'");
+      expect(csp).not.toContain('script-src');
     });
 
     it('returns 429 with no-cache headers and rate limit SVG when rate limited', async () => {
@@ -1176,6 +1197,20 @@ describe('GET /api/streak', () => {
       const response = await GET(makeRequest({ user: 'octocat', refresh: 'true' }));
 
       expect(response.headers.get('Cache-Control')).not.toContain('stale-while-revalidate=86400');
+    });
+  });
+
+  describe('org parameter validation', () => {
+    it('returns 400 when org parameter is a User instead of an Organization', async () => {
+      vi.mocked(getOrgDashboardData).mockRejectedValueOnce(
+        new Error('This endpoint is strictly for organizations.')
+      );
+
+      const response = await GET(makeRequest({ user: 'octocat', org: 'notanorg' }));
+      expect(response.status).toBe(400);
+
+      const body = await response.text();
+      expect(body).toContain('strictly for organizations');
     });
   });
 });

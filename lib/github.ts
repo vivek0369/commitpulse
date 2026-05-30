@@ -518,15 +518,25 @@ export async function fetchOrgMembers(orgName: string): Promise<string[]> {
  * Generates an aggregated Organization Mega-Dashboard.
  */
 export async function getOrgDashboardData(orgName: string, options: FetchOptions = {}) {
-  const [profileData, reposData, members] = await Promise.all([
-    fetchUserProfile(orgName, options),
-    fetchUserRepos(orgName, options),
-    fetchOrgMembers(orgName),
+  const profilePromise = fetchUserProfile(orgName, options);
+  const reposPromise = fetchUserRepos(orgName, options);
+  const membersPromise = fetchOrgMembers(orgName).catch((err) => err as Error);
+
+  const [profileData, reposData, membersOrError] = await Promise.all([
+    profilePromise,
+    reposPromise,
+    membersPromise,
   ]);
 
   if (profileData.type !== 'Organization') {
     throw new Error('This endpoint is strictly for organizations.');
   }
+
+  if (membersOrError instanceof Error) {
+    throw membersOrError;
+  }
+
+  const members = membersOrError;
 
   // Fetch calendars for all members concurrently (Capped by member limit to avoid 429)
   const memberCalendarsPromises = members.map((member: string) =>
@@ -761,6 +771,33 @@ export async function fetchContributedRepos(
   return data?.data?.user?.repositoriesContributedTo?.nodes || [];
 }
 
+export interface DeveloperScoreInput {
+  repos: number;
+  followers: number;
+  stars: number;
+  contributions: number;
+  longestStreak: number;
+}
+
+export function computeDeveloperScore({
+  repos,
+  followers,
+  stars,
+  contributions,
+  longestStreak,
+}: DeveloperScoreInput): number {
+  return Math.min(
+    Math.round(
+      Math.min(repos * 0.5, 25) +
+        Math.min(followers * 0.5, 25) +
+        Math.min(stars * 0.2, 20) +
+        Math.min(contributions / 20, 20) +
+        Math.min(longestStreak * 0.2, 10)
+    ),
+    100
+  );
+}
+
 export async function getFullDashboardData(username: string, options: FetchOptions = {}) {
   const [profileResult, reposResult, calendarResult, contributedReposResult] =
     await Promise.allSettled([
@@ -788,16 +825,19 @@ export async function getFullDashboardData(username: string, options: FetchOptio
   const streakStats = calculateStreak(calendarData);
   const totalStars = reposData.reduce((acc, repo) => acc + repo.stargazers_count, 0);
 
-  const developerScore = Math.min(
-    Math.round(
-      Math.min(profileData.public_repos * 0.5, 25) +
-        Math.min(profileData.followers * 0.5, 25) +
-        Math.min(totalStars * 0.2, 20) +
-        Math.min(streakStats.totalContributions / 20, 20) +
-        Math.min(streakStats.longestStreak * 0.2, 10)
-    ),
-    100
-  );
+  // Developer Score — 5-factor weighted formula (max 100 pts)
+  // Repos:         up to 25 pts  (saturates at 50 public repos)
+  // Followers:     up to 25 pts  (saturates at 50 followers)
+  // Stars:         up to 20 pts  (saturates at 100 total stars)
+  // Contributions: up to 20 pts  (saturates at 400 yearly contributions)
+  // Streak:        up to 10 pts  (saturates at a 50-day longest streak)
+  const developerScore = computeDeveloperScore({
+    repos: profileData.public_repos,
+    followers: profileData.followers,
+    stars: totalStars,
+    contributions: streakStats.totalContributions,
+    longestStreak: streakStats.longestStreak,
+  });
 
   const profile = {
     username: profileData.login,
@@ -952,15 +992,21 @@ export async function getFullDashboardData(username: string, options: FetchOptio
 
 export async function getWrappedData(
   username: string,
-  year: string
+  year: string,
+  options?: FetchOptions
 ): Promise<import('../types/dashboard').WrappedStats> {
   const from = `${year}-01-01T00:00:00Z`;
   const to = `${year}-12-31T23:59:59Z`;
-  const options: FetchOptions = { from, to, bypassCache: true };
+  const fetchOptions: FetchOptions = {
+    from,
+    to,
+    bypassCache: options?.bypassCache ?? false,
+    signal: options?.signal,
+  };
 
   const [calendar, repos] = await Promise.all([
-    fetchGitHubContributions(username, options),
-    fetchUserRepos(username, options),
+    fetchGitHubContributions(username, fetchOptions),
+    fetchUserRepos(username, fetchOptions),
   ]);
 
   const allDays = calendar.weeks.flatMap((w) => w.contributionDays);

@@ -7,6 +7,7 @@ import {
   particleCount,
   escapeXML,
   getSizeScale,
+  truncateUsername,
 } from './generator';
 import type { BadgeParams, ContributionCalendar, StreakStats, MonthlyStats } from '../../types';
 import { hexColor } from './sanitizer';
@@ -632,8 +633,8 @@ describe('generateSVG', () => {
       expect(svg).toContain('attributeName="opacity" values="1;0.4;1"');
     });
 
-    it('does not pulse when todayDate has no commits even if another day does', () => {
-      // todayDate = '2024-06-13' (0 commits) — no pulse
+    it('pulses even when todayDate has no commits', () => {
+      // todayDate = '2024-06-13' (0 commits) — should pulse under new design requirements
       const stats: StreakStats = {
         currentStreak: 0,
         longestStreak: 2,
@@ -643,7 +644,26 @@ describe('generateSVG', () => {
 
       const svg = generateSVG(stats, { user: 'avi' } as unknown as BadgeParams, calendar);
 
-      expect(svg).not.toContain('attributeName="opacity" values="1;0.4;1"');
+      expect(svg).toContain('attributeName="opacity" values="1;0.4;1"');
+    });
+
+    it("applies a prominent top-face accent stroke highlight to today's zero-commit tile", () => {
+      const stats: StreakStats = {
+        currentStreak: 0,
+        longestStreak: 2,
+        totalContributions: 10,
+        todayDate: '2024-06-13',
+      };
+
+      const svg = generateSVG(
+        stats,
+        { user: 'avi', accent: '00ffaa' } as unknown as BadgeParams,
+        calendar
+      );
+
+      // Verify today's zero-commit tile has the correct top-face stroke highlight
+      // For static theme, todayStrokeColor is resolved to accentColorHex ('#00ffaa')
+      expect(svg).toContain('stroke="#00ffaa" stroke-opacity="0.8" stroke-width="1.2"');
     });
     it('includes accessible title and description metadata', () => {
       const svg = generateSVG(
@@ -807,6 +827,20 @@ describe('generateSVG', () => {
       );
       expect(svg).toContain('class="isometric-labels"');
       expect(svg).toContain('fill="var(--cp-text)"');
+    });
+
+    it('verify boundary robustness of username length truncator (Variation 4)', () => {
+      const extendedLongUsername = 'abcdefghijklmnopqrstuvwxyz1234567890';
+      const extendedParams = {
+        user: extendedLongUsername,
+        hide_title: false,
+      } as unknown as BadgeParams;
+
+      const svg = generateSVG(mockStats, extendedParams, mockCalendar);
+
+      expect(extendedLongUsername.length).toBeGreaterThan(30);
+      expect(svg).toContain('ABCDEFGHIJKL...');
+      expect(svg).not.toContain('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
     });
   });
 });
@@ -1230,5 +1264,43 @@ describe('Radar Scan Line Animation Alignment', () => {
 
     // Initial y on the rect must be 80
     expect(svg).toContain('rect x="100" y="80"');
+  });
+
+  it('safely truncates usernames longer than 30 chars with trailing dots', () => {
+    // 1. Arrange: Create a username strictly longer than 30 characters
+    const longUsername = 'ThisIsAVeryLongUsernameThatExceedsThirtyCharacters';
+
+    // 2. Act: Pass the string AND the max length of 30
+    const result = truncateUsername(longUsername);
+
+    // 3. Assert: Verify it contains the trailing dots
+    expect(result.endsWith('...')).toBe(true);
+
+    // 4. Assert: Verify the string was actually truncated
+    // If it caps at 30 chars and adds '...', the max length is 33.
+    expect(result.length).toBeLessThanOrEqual(33);
+
+    // 5. Assert: Ensure the original string was actually modified
+    expect(result).not.toEqual(longUsername);
+  });
+
+  it('renders long usernames as truncated SVG labels without breaking geometry', () => {
+    const longUsername = 'ThisIsAVeryLongUsernameThatExceedsThirtyCharacters';
+    const svg = generateSVG(
+      {
+        currentStreak: 10,
+        longestStreak: 20,
+        totalContributions: 200,
+        todayDate: '2024-06-12',
+      },
+      { user: longUsername, size: 'medium', autoTheme: false } as unknown as BadgeParams,
+      mockCalendar
+    );
+
+    expect(svg).toContain('...');
+    expect(svg).not.toContain(longUsername.toUpperCase());
+    expect(svg).toContain('text-anchor="middle"');
+    expect(svg).toContain('width="600"');
+    expect(svg).toContain('height="420"');
   });
 });

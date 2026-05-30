@@ -473,6 +473,20 @@ describe('TTLCache', () => {
 
       cache.destroy();
     });
+
+    it('verify TTLCache behavior for infinite TTL value (Variation 1)', () => {
+      const cache = new TTLCache<string>();
+
+      expect(() => {
+        cache.set('infinite-key', 'boundary-value', Infinity);
+      }).not.toThrow();
+
+      expect(cache.get('infinite-key')).toBe('boundary-value');
+
+      expect(cache.has('infinite-key')).toBe(true);
+
+      cache.destroy();
+    });
   });
 });
 

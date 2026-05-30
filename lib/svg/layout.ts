@@ -118,7 +118,7 @@ export function computeTowers(
       const isTodayWithCommits = isToday && hasCommits;
 
       const unit = mode === 'loc' ? 'lines of code' : 'contributions';
-      const tooltip = isTodayWithCommits
+      const tooltip = isToday
         ? `TODAY: ${day.date}: ${count} ${unit}`
         : `${day.date}: ${count} ${unit}`;
 
@@ -127,9 +127,9 @@ export function computeTowers(
       let intensityLevel = 0;
       if (hasCommits) {
         if (maxCommits <= 4) {
-          intensityLevel = Math.min(4, day.contributionCount);
+          intensityLevel = Math.min(4, count);
         } else {
-          const ratio = day.contributionCount / maxCommits;
+          const ratio = count / maxCommits;
           if (ratio <= 0.25) intensityLevel = 1;
           else if (ratio <= 0.5) intensityLevel = 2;
           else if (ratio <= 0.75) intensityLevel = 3;

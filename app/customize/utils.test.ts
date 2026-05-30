@@ -47,6 +47,13 @@ describe('Export Snippet utilities', () => {
       expect(htmlResult).toContain(EXPECTED_BASE_URL);
     });
 
+    it('handles undefined query string', () => {
+      // @ts-expect-error Testing undefined query string at runtime
+      const result = getExportSnippet('markdown', undefined);
+
+      expect(result).toBe(`![CommitPulse](${EXPECTED_BASE_URL}?undefined)`);
+    });
+
     it('handles complex query strings', () => {
       const complexQuery = 'user=complex%20name&ring=ff0000%2C00ff00&fire=true';
       const result = getExportSnippet('markdown', complexQuery);
@@ -84,6 +91,13 @@ describe('Export Snippet utilities', () => {
       expect(result.startsWith('name: CommitPulse Streak Badge')).toBe(true);
       expect(result).toContain('your-github-username');
       expect(result).toContain(EXPECTED_BASE_URL);
+    });
+
+    it('throws for unsupported placeholder format', () => {
+      // @ts-expect-error Testing invalid placeholder format at runtime
+      expect(() => getPlaceholderSnippet('unsupported')).toThrow(
+        'Unsupported export format: unsupported'
+      );
     });
   });
 });
