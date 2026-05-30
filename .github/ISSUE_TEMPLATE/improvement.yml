@@ -1,0 +1,47 @@
+name: Improvement / Feature Request
+description: Suggest an idea, enhancement, or new feature for CommitPulse
+title: 'Enhancement: '
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an improvement! Please fill out this form to help us understand your idea.
+
+        💡 **Pro-Tip:** If you'd like to build this yourself, just comment `/claim` after submitting!
+
+  - type: textarea
+    id: overview
+    attributes:
+      label: Overview
+      description: A clear and concise description of the enhancement or feature you are proposing.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_changes
+    attributes:
+      label: Proposed Changes
+      description: How should this feature work? What exactly needs to be changed or added?
+      value: |
+        1. 
+        2. 
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_outcome
+    attributes:
+      label: Expected Outcome
+      description: How will this improvement benefit the users or the project?
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Visual Previews / Design Inspiration
+      description: (Optional) Drop any mockups, screenshots, or inspiration links here.
+    validations:
+      required: false
