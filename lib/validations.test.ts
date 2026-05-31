@@ -757,6 +757,24 @@ describe('ogParamsSchema', () => {
   });
 });
 
+describe('streakParamsSchema — theme validation', () => {
+  it('rejects an invalid theme value with 400 validation error listing allowed themes', () => {
+    const result = streakParamsSchema.safeParse({
+      user: 'octocat',
+      theme: 'nonexistent_theme_name',
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const fieldError = result.error.flatten().fieldErrors.theme?.[0];
+      expect(fieldError).toContain('Invalid theme. Supported themes:');
+      expect(fieldError).toContain('dark');
+      expect(fieldError).toContain('light');
+      expect(fieldError).toContain('neon');
+    }
+  });
+});
+
 describe('streakParamsSchema — view fallback behavior', () => {
   it('accepts "default" as a valid view value', () => {
     expect(parse({ view: 'default' }).view).toBe('default');
@@ -1011,5 +1029,35 @@ describe('streakParamsSchema — layout query validation boundaries (Variation 2
     if (result.success) {
       expect(result.data.layout).toBeUndefined();
     }
+  });
+});
+
+/* ==========================================================================
+ * USER PARAMETER — QUERY VALIDATION BOUNDARIES (VARIATION 3)
+ * ========================================================================== */
+
+describe('streakParamsSchema user maxLength validation boundaries (Variation 3)', () => {
+  it('rejects a GitHub username that exceeds the 39 character length threshold', () => {
+    const invalidPayload = {
+      user: 'a'.repeat(40),
+    };
+
+    const parseResult = streakParamsSchema.safeParse(invalidPayload);
+
+    expect(parseResult.success).toBe(false);
+    if (!parseResult.success) {
+      const fieldErrors = parseResult.error.flatten().fieldErrors;
+      expect(fieldErrors.user).toBeDefined();
+      expect(fieldErrors.user?.[0]).toContain('cannot exceed 39 characters');
+    }
+  });
+
+  it('accepts a username exactly at the upper limit of 39 characters', () => {
+    const validPayload = {
+      user: 'a'.repeat(39),
+    };
+
+    const parseResult = streakParamsSchema.safeParse(validPayload);
+    expect(parseResult.success).toBe(true);
   });
 });
