@@ -77,7 +77,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<NotificationR
     if (!process.env.MONGODB_URI) {
       if (process.env.NODE_ENV === 'production') {
         console.error(
-          'CRITICAL: MONGODB_URI is not set in production environment. Notification lookup is disabled.'
+          'CRITICAL: MONGODB_URI is not set in production environment. Notification registration is disabled.'
         );
         return NextResponse.json(
           { success: false, message: 'Database configuration error.' },
@@ -85,15 +85,13 @@ export async function POST(req: NextRequest): Promise<NextResponse<NotificationR
         );
       }
 
-      console.warn('MONGODB_URI is not set. Bypassing notification lookup for local development.');
-
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'No notification preferences found (no database configured).',
-        },
-        { status: 503 }
+      console.warn(
+        'MONGODB_URI is not set. Bypassing notification registration for local development.'
       );
+      return NextResponse.json({
+        success: true,
+        message: 'Notification registration bypassed (no database configured).',
+      });
     }
 
     await dbConnect();
@@ -183,13 +181,12 @@ export async function GET(req: NextRequest): Promise<NextResponse<NotificationRe
       }
 
       console.warn('MONGODB_URI is not set. Bypassing notification lookup for local development.');
-
       return NextResponse.json(
         {
           success: false,
           message: 'No notification preferences found (no database configured).',
         },
-        { status: 503 } // or 500, depending on project preference
+        { status: 503 }
       );
     }
 
