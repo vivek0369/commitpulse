@@ -494,6 +494,7 @@ npm install
 cat > .env.local << 'EOF'
 GITHUB_TOKEN=your_github_pat_here
 
+# GITHUB_PAT is also accepted as an alias for GITHUB_TOKEN
 # Optional — enables user tracking (see below)
 # MONGODB_URI=mongodb+srv://...
 EOF
@@ -528,9 +529,11 @@ For production (Vercel), add `MONGODB_URI` to your project's **Environment Varia
 
 ## 🌐 Deploy Your Own
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/JhaSourav07/commitpulse&env=GITHUB_PAT&envDescription=GitHub%20Personal%20Access%20Token%20with%20read%3Auser%20scope)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/JhaSourav07/commitpulse&env=GITHUB_TOKEN&envDescription=GitHub%20Personal%20Access%20Token%20with%20read%3Auser%20scope)
 
-Set the `GITHUB_PAT` environment variable in your Vercel project settings, and you're live.
+Set the `GITHUB_TOKEN` environment variable in your Vercel project settings, and you're live.
+
+> **Note:** Both `GITHUB_TOKEN` and `GITHUB_PAT` are accepted. `GITHUB_TOKEN` is the canonical name used throughout the codebase; `GITHUB_PAT` works as an alias for backwards compatibility.
 
 ---
 
