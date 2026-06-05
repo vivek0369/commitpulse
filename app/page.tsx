@@ -988,7 +988,6 @@ export default function LandingPage() {
                 <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
                   {item.desc}
                 </p>
-
               </motion.div>
             ))}
           </div>
