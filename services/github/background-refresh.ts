@@ -1,7 +1,3 @@
-import crypto from 'crypto';
-
-import dbConnect from '@/lib/mongodb';
-
 import { getFullDashboardData } from '../../lib/github';
 
 // Cache is considered stale and candidate for background refresh after 10 minutes
@@ -59,19 +55,13 @@ export class BackgroundRefresh {
    * Generates normalized lock key.
    */
   private createLockKey(username: string): string {
-    const normalized = username.trim().toLowerCase();
-
-    return crypto.createHash('sha256').update(normalized).digest('hex');
+    return username.trim().toLowerCase();
   }
 
   /**
    * Attempts to acquire refresh lock.
    */
-  private async acquireLock(username: string): Promise<boolean> {
-    if (process.env.NODE_ENV !== 'test') {
-      await dbConnect();
-    }
-
+  private acquireLock(username: string): boolean {
     const key = this.createLockKey(username);
 
     const existing = globalLocks.get(key);
@@ -102,7 +92,7 @@ export class BackgroundRefresh {
   public async triggerRefresh(username: string): Promise<void> {
     const sanitized = username.trim().toLowerCase();
 
-    const acquired = await this.acquireLock(sanitized);
+    const acquired = this.acquireLock(sanitized);
 
     if (!acquired) {
       console.info(`[BackgroundRefresh] Refresh already active for: ${sanitized}`);
