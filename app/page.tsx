@@ -1,6 +1,4 @@
 import type { Metadata } from 'next';
-import LandingPageClient from './components/LandingPageClient';
-import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { gsap } from 'gsap';
@@ -12,24 +10,13 @@ import {
   GitCommit,
   Folder,
   Search,
-  Loader2,
-  Sparkles,
-  Copy,
-  ExternalLink,
   X,
 } from 'lucide-react';
 
 import useLocalStorage from '@/hooks/useLocalStorage';
-
-import { CommitPulseLogo } from '@/components/commitpulse-logo';
-import { CustomizeCTA } from './components/CustomizeCTA';
-import { useRecentSearches } from '@/hooks/useRecentSearches';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Footer } from '@/app/components/Footer';
-// @ts-expect-error - This is a client component and should not be rendered on the server
-import { InteractiveViewer } from '@/components/interactive-viewer/InteractiveViewer';
-
-import { FeatureCard, FeatureCardsSection } from '@/components/FeatureCards';
+import { FeatureCardsSection } from '@/components/FeatureCards';
 import { DiscordButton } from '@/components/DiscordButton';
 import { WallOfLove } from '@/components/WallOfLove';
 import { validateGitHubUsername } from '@/lib/validations';
@@ -66,89 +53,14 @@ export const metadata: Metadata = {
   },
 };
 
-const Icons = {
-  Flame,
-  Trophy,
-  GitCommit,
-  Folder,
-  Search,
-  Loader2,
-  Sparkles,
-  Copy,
-  ExternalLink,
-  X,
-  Github: () => (
-    <svg height="24" width="24" viewBox="0 0 16 16" fill="currentColor">
-      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-    </svg>
-  ),
-  Zap: () => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M13 2 L3 14 L12 14 L11 22 L21 10 L12 10 L13 2 Z" />
-    </svg>
-  ),
-  Box: () => <CommitPulseLogo className="h-6 w-6" />,
-  Check: () => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#10b981"
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  ),
-};
-
 export default function LandingPage() {
-  const [svgState, setSvgState] = useState<'idle' | 'loading' | 'loaded' | 'success' | 'error'>('idle');
-  const [svgContent, setSvgContent] = useState<string>('');
-  
-  const getDisplayUsername = (name: string) => {
-    if (name.includes('github.com/')) {
-      const parts = name.split('github.com/');
-      if (parts[1]) {
-        const pathParts = parts[1].split('?')[0].split('/');
-        const userPart = pathParts.find((p) => p.trim().length > 0);
-        if (userPart) return userPart;
-      }
-    }
-    return name;
-  };
-
   const [username, setUsername] = useLocalStorage('commitpulse:last-user', '');
   const [instantUsername, setInstantUsername] = useState('');
-  const [copied, setCopied] = useState(false);
 
-  const resetCopiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scrollToGuideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const [badgeResult, setBadgeResult] = useState<{
-    username: string;
-    status: 'loaded' | 'error';
-  } | null>(null);
-  
   const guideRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
-  const { searches, addSearch, clearSearches, removeSearch } = useRecentSearches();
-  const mounted = true; // This component is client-only, so we can assume it's always mounted
+  const [mounted, setMounted] = useState(false);
 
-  // States for user profile details loading
   interface UserDetails {
     public_repos?: number;
     stats?: {
@@ -161,7 +73,9 @@ export default function LandingPage() {
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
   const [userDetailsError, setUserDetailsError] = useState<string | null>(null);
 
-  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useGSAP(
     () => {
@@ -189,23 +103,6 @@ export default function LandingPage() {
   const debouncedUsername = useDebounce(trimmedUsername, 500);
 
   const previewUsername = instantUsername || debouncedUsername;
-  const hasUsername = previewUsername.length > 0;
-
-  const badgeUrl = `/api/streak?user=${previewUsername}`;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://commitpulse.vercel.app';
-  const markdown = `![CommitPulse](${siteUrl}/api/streak?user=${trimmedUsername})`;
-  
-  const DownloadSVG = () => {
-    const link = document.createElement('a');
-    link.href = badgeUrl;
-    link.download = `${debouncedUsername}-commitpulse-badge.svg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const badgeLoaded = badgeResult?.username === previewUsername && badgeResult?.status === 'loaded';
-  const badgeError = badgeResult?.username === previewUsername && badgeResult?.status === 'error';
 
   useEffect(() => {
     if (!mounted) return;
@@ -251,91 +148,12 @@ export default function LandingPage() {
     fetchDetails();
   }, [debouncedUsername, mounted]);
 
-  const clearCopyTimers = () => {
-    if (resetCopiedTimeoutRef.current) {
-      clearTimeout(resetCopiedTimeoutRef.current);
-      resetCopiedTimeoutRef.current = null;
-    }
-    if (scrollToGuideTimeoutRef.current) {
-      clearTimeout(scrollToGuideTimeoutRef.current);
-      scrollToGuideTimeoutRef.current = null;
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      clearCopyTimers();
-    };
-  }, []);
-
-  const copyToClipboard = async () => {
-    if (trimmedUsername.length === 0) return;
-    clearCopyTimers();
-
-    try {
-      await navigator.clipboard.writeText(markdown);
-    } catch {
-      setCopied(false);
-      return;
-    }
-
-    setCopied(true);
-
-    scrollToGuideTimeoutRef.current = setTimeout(() => {
-      guideRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 80);
-
-    resetCopiedTimeoutRef.current = setTimeout(() => {
-      setCopied(false);
-    }, 50000);
-  };
-
-  const selectDemoUser = (name: string) => {
-    setUsername(name);
-    setInstantUsername(name);
-  };
-
   const handleGenerate = (e: React.FormEvent) => {
     e.preventDefault();
     if (trimmedUsername.length > 0) {
       setInstantUsername(trimmedUsername);
     }
   };
-
-  const statsData = [
-    {
-      label: 'Current Streak',
-      value: userDetails?.stats?.currentStreak ?? (previewUsername ? 0 : 12),
-      icon: Flame,
-      color: 'from-orange-500/20 to-red-500/20 text-orange-400 border-orange-500/20',
-      glow: 'shadow-orange-500/10',
-      unit: 'days',
-    },
-    {
-      label: 'Longest Streak',
-      value: userDetails?.stats?.longestStreak ?? (previewUsername ? 0 : 34),
-      icon: Trophy,
-      color: 'from-amber-500/20 to-yellow-500/20 text-amber-400 border-yellow-500/20',
-      glow: 'shadow-yellow-500/10',
-      unit: 'days',
-    },
-    {
-      label: 'Contributions',
-      value: userDetails?.stats?.totalContributions ?? (previewUsername ? 0 : 420),
-      icon: GitCommit,
-      color: 'from-emerald-500/20 to-teal-500/20 text-emerald-400 border-emerald-500/20',
-      glow: 'shadow-emerald-500/10',
-      unit: 'commits',
-    },
-    {
-      label: 'Repositories',
-      value: userDetails?.public_repos ?? (previewUsername ? 0 : 24),
-      icon: Folder,
-      color: 'from-cyan-500/20 to-blue-500/20 text-cyan-400 border-cyan-500/20',
-      glow: 'shadow-cyan-500/10',
-      unit: 'repos',
-    },
-  ];
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-transparent font-sans text-black dark:text-white selection:bg-black/20 dark:selection:bg-white/20">
@@ -414,19 +232,6 @@ export default function LandingPage() {
                     </button>
                   ) : null}
                 </div>
-
-                <button
-                  type="submit"
-                  disabled={!mounted || trimmedUsername.length === 0}
-                  className={`relative flex min-w-[180px] items-center justify-center gap-2 overflow-hidden rounded-2xl px-6 py-4 text-sm font-bold transition-all duration-300 transform cursor-pointer hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed ${
-                    mounted && trimmedUsername.length > 0
-                      ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.25)] hover:opacity-95'
-                      : 'bg-gray-100 text-gray-400 dark:bg-white/5 dark:text-white/55'
-                  }`}
-                >
-                  <Sparkles size={16} />
-                  Generate Badge
-                </button>
               </div>
 
               {mounted && (
@@ -489,7 +294,7 @@ export default function LandingPage() {
         </section>
         
         <FeatureCardsSection>
-        <WallOfLove />
+          <WallOfLove />
         </FeatureCardsSection>
       </main>
       <Footer />
