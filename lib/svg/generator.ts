@@ -27,25 +27,16 @@ import { GRID_ORIGIN_X, GRID_ORIGIN_Y, TILE_HEIGHT_HALF, TILE_WIDTH_HALF } from 
 import { SVG_WIDTH, SVG_HEIGHT } from './generatorConstants';
 
 const FONT_MAP = {
-  // ── Pre-existing entries ────────────────────────────────────────────────
   jetbrains: '"JetBrains Mono", monospace',
   fira: '"Fira Code", monospace',
   roboto: '"Roboto", sans-serif',
-
-  // ── Previously missing — both fonts are in the unconditional @import ───
-  // Without these entries, passing ?font=syncopate or ?font=spacegrotesk
-  // incorrectly triggers a duplicate dynamic Google Fonts fetch.
   syncopate: '"Syncopate", sans-serif',
   spacegrotesk: '"Space Grotesk", sans-serif',
-  'space grotesk': '"Space Grotesk", sans-serif', // handles spaced user input
-
-  // ── Aliases for common variations ───────────────────────────────────────
-  firacode: '"Fira Code", monospace', // alias: fira is the canonical key
-  'jetbrains mono': '"JetBrains Mono", monospace', // handles spaced user input
-
-  // ── Legacy keys for backward compatibility ──────────────────────────────
+  'space grotesk': '"Space Grotesk", sans-serif',
+  firacode: '"Fira Code", monospace',
+  'jetbrains mono': '"JetBrains Mono", monospace',
   inter: '"Inter", sans-serif',
-  space: '"Space Grotesk", sans-serif', // old key for spacegrotesk
+  space: '"Space Grotesk", sans-serif',
 } as const;
 
 export function resolveFont(sanitizedFont?: string | null): string | null {
@@ -64,7 +55,6 @@ function isBundledFont(sanitizedFont?: string | null): boolean {
   return fontKey in FONT_MAP && fontKey !== 'inter';
 }
 
-// helpers
 export function getSizeScale(size?: 'small' | 'medium' | 'large') {
   if (size === 'small') return 400 / SVG_WIDTH;
   if (size === 'large') return 800 / SVG_WIDTH;
@@ -121,12 +111,6 @@ export interface TowerPaths {
   top: string;
 }
 
-/**
- * Builds the SVG path strings for the three faces of an isometric 3D tower.
- *
- * @param h - The height of the tower.
- * @param scale - Optional scale factor (defaults to 1, which represents the standard 16x10 grid).
- */
 export function buildTowerPaths(h: number, scale: number = 1): TowerPaths {
   const tileHalfWidth = 16 * scale;
   const tileHalfHeight = 10 * scale;
@@ -183,8 +167,6 @@ export function getInteractiveTowerCSS(accentColorExpr: string): string {
   `;
 }
 
-// ── Section helpers for generateSVG ──────────────────────────────────────
-
 function renderHeader(
   safeUser: string,
   stats: StreakStats,
@@ -203,24 +185,14 @@ function renderHeader(
   ${renderDefs(sf, params)}`;
 }
 
-/**
- * Generates custom SVG gradient definitions from gradient_stops and gradient_dir parameters.
- * Returns an object with gradient SVG elements and the gradient ID (or empty string if invalid).
- * If custom stops are invalid or insufficient, returns { gradients: '', gradientId: '' }.
- * Also stores the gradient ID on the params object for tower rendering to use.
- */
 function generateCustomGradients(params: BadgeParams): { gradients: string; gradientId: string } {
   const stops = parseGradientStops(params.gradient_stops);
 
-  // Require at least 2 valid colors for custom gradient
   if (stops.length < 2) {
     return { gradients: '', gradientId: '' };
   }
 
   const coords = getGradientCoordinates(params.gradient_dir);
-
-  // Create a deterministic gradient ID based on the color stops and direction
-  // This ensures consistent output and avoids random/duplicate IDs
   const gradientSignature = `${stops.join('-')}-${params.gradient_dir || 'vertical'}`;
   const gradientId = `custom-grad-${deterministicRandom(gradientSignature)
     .toString()
@@ -228,19 +200,15 @@ function generateCustomGradients(params: BadgeParams): { gradients: string; grad
 
   let gradients = '';
 
-  // Generate 4 gradient definitions (one for each intensity level)
-  // Each uses the same color stops but with different opacity progression
   for (let i = 0; i < 4; i++) {
     const level = i + 1;
     const levelId = `${gradientId}-level-${level}`;
 
-    // Build the stop elements
     let stopElements = '';
     const stopCount = stops.length;
 
     stops.forEach((color, stopIdx) => {
       const offset = (stopIdx / (stopCount - 1)) * 100;
-      // Increase opacity with intensity level (0.4 to 0.8)
       const baseOpacity = 0.4 + i * 0.2;
       const stopOpacity = Math.min(1, baseOpacity + stopIdx * 0.1);
 
@@ -255,9 +223,7 @@ ${stopElements}
       </linearGradient>`;
   }
 
-  // Store the gradient ID on params for tower rendering to use
   params.__customGradientId = gradientId;
-
   return { gradients, gradientId };
 }
 
@@ -266,13 +232,10 @@ function renderDefs(sf: number, params: BadgeParams): string {
 
   let gradients = '';
   if (params.gradient) {
-    // Try to use custom gradient if gradient_stops is provided
     const result = generateCustomGradients(params);
     if (result.gradientId) {
-      // Custom gradient stops were valid and used
       gradients = result.gradients;
     } else {
-      // Fallback to default gradient behavior
       const bgStr = params.bg || '0d1117';
       const bgHex = bgStr.startsWith('#') ? bgStr : `#${bgStr}`;
 
@@ -442,7 +405,6 @@ function renderTowers(
       topFillAttr = leftRightFillAttr;
     }
 
-    // opacity scalar: clamp 0.1–1.0, applied globally to all tower faces
     let leftFaceOpacity = Math.round(t.faceOpacity.left * opacity * 100) / 100;
     let rightFaceOpacity = Math.round(t.faceOpacity.right * opacity * 100) / 100;
     let topFaceOpacity = Math.round(t.faceOpacity.top * opacity * 100) / 100;
@@ -459,7 +421,6 @@ function renderTowers(
     let finalTopFillAttr = topFillAttr;
 
     if (!isGhost && t.intensityLevel > 0 && params.gradient === true) {
-      // Use custom gradient ID if available, otherwise use default gradient ID
       const customGradId = params.__customGradientId;
       const gradId = customGradId
         ? `${customGradId}-level-${t.intensityLevel}`
@@ -622,11 +583,10 @@ const MONTH_NAMES = [
   'Dec',
 ];
 
-// Layout constants for 3D isometric label positioning
 const ISOMETRIC_VERTICAL_OFFSET = 20;
-
 const MONTH_LABEL_ROW_OFFSET = 7.2;
 const WEEKDAY_LABEL_COL_OFFSET = -1.2;
+
 function renderIsometricLabels(
   calendar: ContributionCalendar,
   params: BadgeParams,
@@ -727,8 +687,6 @@ function renderMilestoneBadges(stats: StreakStats, params: BadgeParams, sf: numb
 
   return `<g class="milestone-badges">${elements}</g>`;
 }
-
-// ── Main static-theme renderer ────────────────────────────────────────────
 
 export function generateSVG(
   stats: StreakStats,
@@ -904,15 +862,6 @@ ${renderMilestoneBadges(stats, params, sf)}
 `;
 }
 
-/**
- * Computes the formatted delta text string for the monthly stats badge.
- * Shared between generateMonthlySVG (static theme) and
- * generateAutoThemeMonthlySVG (auto theme) to prevent divergence.
- *
- * @param stats - Monthly contribution statistics
- * @param deltaUnit - 'commits' or 'lines' depending on mode
- * @param deltaFormat - 'percent' | 'absolute' | 'both' from URL params
- */
 function computeDeltaText(
   stats: MonthlyStats,
   deltaUnit: string,
@@ -936,7 +885,6 @@ function computeDeltaText(
           : `0% (${stats.deltaAbsolute > 0 ? '+' : ''}${stats.deltaAbsolute})`;
   }
 
-  // percent (default)
   return stats.deltaPercentage === null
     ? 'N/A'
     : stats.deltaPercentage > 0
@@ -982,7 +930,6 @@ export function generateMonthlySVG(stats: MonthlyStats, params: BadgeParams): st
   const deltaUnit = params.mode === 'loc' ? 'LINES (EST.)' : 'commits';
 
   const deltaText = computeDeltaText(stats, deltaUnit, params.delta_format);
-  // Resolve negative color
   let negativeColor = '#ff4444';
   const cleanBg = sanitizeHexColor(params.bg, '0d1117');
   const matchedTheme = Object.values(themes).find(
@@ -992,7 +939,6 @@ export function generateMonthlySVG(stats: MonthlyStats, params: BadgeParams): st
   if (matchedTheme && matchedTheme.negative) {
     negativeColor = `#${matchedTheme.negative}`;
   } else {
-    // Dynamic fallback based on background luminance
     const luminance = getLuminance(cleanBg);
     negativeColor = luminance > 0.5 ? '#cf222e' : '#f85149';
   }
@@ -1041,10 +987,6 @@ export function generateMonthlySVG(stats: MonthlyStats, params: BadgeParams): st
 `;
 }
 
-/**
- * Backwards-compatible alias used by some integrations/tests.
- * Keeps the public API explicit: `generateMonthlyBadge` -> `generateMonthlySVG`.
- */
 export function generateMonthlyBadge(stats: MonthlyStats, params: BadgeParams): string {
   return generateMonthlySVG(stats, params);
 }
@@ -1080,7 +1022,6 @@ export function generateWrappedSVG(
     ? `@import url('https://fonts.googleapis.com/css2?family=${googleFontUrlPart}&amp;display=swap');`
     : '';
 
-  // Format month name (e.g. "2025-11" -> "NOVEMBER")
   const MONTH_NAMES: Record<string, string> = {
     '01': 'JANUARY',
     '02': 'FEBRUARY',
@@ -1100,7 +1041,6 @@ export function generateWrappedSVG(
     ? MONTH_NAMES[monthPart] || stats.busiestMonth
     : stats.busiestMonth || 'N/A';
 
-  // Format peak day (e.g. "2025-11-20" -> "Nov 20")
   function formatActiveDate(dateStr: string): string {
     if (!dateStr) return 'N/A';
     const parts = dateStr.split('-');
@@ -1126,29 +1066,20 @@ export function generateWrappedSVG(
   }
   const formattedPeakDate = formatActiveDate(stats.mostActiveDate);
 
-  // Circular progress calculations for weekend grind
-  // Radius = 14, circumference = 2 * PI * 14 = 87.96
   const radiusCircle = 14;
-  const circ = 2 * Math.PI * radiusCircle; // ~87.96
+  const circ = 2 * Math.PI * radiusCircle;
   const clampedRatio = Math.max(0, Math.min(stats.weekendRatio || 0, 100));
   const strokeDashoffset = circ - (clampedRatio / 100) * circ;
 
-  // Background Mini-Monolith calculations
-  // Get 14 weeks of towers and scale them down
-  const sf = 0.45; // scale down
+  const sf = 0.45;
   const rawTowers = computeTowers(calendar, params.scale, '', 'commits');
-  // We want to translate them to align beautifully behind the total contributions count
-  // Scale raw coordinates: tx * sf, ty * sf
   let bgTowersMarkup = '';
   const resolvedSolidColor = accent;
   for (const t of rawTowers) {
-    // Only draw towers that have contributions or represent ghost city landscape
-    // We scale down the height and coordinates
     const scaleHeight = t.h * sf;
-    const scaleX = Math.round(t.x * sf) - 50; // offset left to shift it to the background
-    const scaleY = Math.round(t.y * sf) + 80; // shift down slightly
+    const scaleX = Math.round(t.x * sf) - 50;
+    const scaleY = Math.round(t.y * sf) + 80;
 
-    // Extreme low opacity for elegant backdrop watermark
     const leftFaceOpacity = t.isGhost ? 0.01 : 0.015;
     const rightFaceOpacity = t.isGhost ? 0.005 : 0.01;
     const topFaceOpacity = t.isGhost ? 0.02 : 0.035;
@@ -1164,7 +1095,6 @@ export function generateWrappedSVG(
         </g>`;
   }
 
-  // Border override or default glow
   const borderAttr = params.border
     ? `stroke="#${sanitizeHexColor(params.border, '58a6ff')}" stroke-width="1.5"`
     : `stroke="${accent}" stroke-opacity="0.15" stroke-width="1.5"`;
@@ -1384,8 +1314,6 @@ function generateAutoThemeMonthlySVG(stats: MonthlyStats, params: BadgeParams): 
 `;
 }
 
-// ── Heatmap View ──────────────────────────────────────────────────────────
-
 const HEATMAP_CELL_SIZE = 16;
 const HEATMAP_CELL_GAP = 3;
 const HEATMAP_CELL_RADIUS = 2;
@@ -1436,7 +1364,6 @@ function renderHeatmapGrid(
   const originY = Math.round(HEATMAP_GRID_ORIGIN_Y * sf);
   const step = cellSize + cellGap;
 
-  // Find max contribution count for intensity calculation
   let maxCount = 0;
   weeks.forEach((week) => {
     week.contributionDays.forEach((day) => {
@@ -1446,14 +1373,12 @@ function renderHeatmapGrid(
     });
   });
 
-  // Check if todayDate is in visible window
   const todayInWindow = weeks.some((w) => w.contributionDays.some((d) => d.date === todayDate));
 
   let cells = '';
   let monthHeaders = '';
   let prevMonth = '';
 
-  // Render grid cells
   weeks.forEach((week, col) => {
     week.contributionDays.forEach((day, row) => {
       const count =
@@ -1472,8 +1397,6 @@ function renderHeatmapGrid(
       const tooltip = `${tooltipPrefix}${day.date}: ${count} ${unit}`;
 
       const fillAttr = isAutoTheme ? 'fill="var(--cp-accent)"' : `fill="${accent}"`;
-
-      // Glow on high-intensity cells
       const filterAttr = intensity === 4 && glow !== false ? ' filter="url(#hm-glow)"' : '';
 
       cells += `
@@ -1487,7 +1410,6 @@ function renderHeatmapGrid(
       </rect>`;
     });
 
-    // Month header: detect month change from first day of each week
     if (week.contributionDays.length > 0) {
       const firstDay = week.contributionDays[0];
       const monthNum = parseInt(firstDay.date.substring(5, 7), 10);
@@ -1503,7 +1425,6 @@ function renderHeatmapGrid(
     }
   });
 
-  // Weekday labels
   let weekdayLabels = '';
   HEATMAP_WEEKDAY_LABELS.forEach((label, row) => {
     if (!label) return;
@@ -1829,7 +1750,6 @@ function generateAutoThemeHeatmapSVG(
 </svg>`;
 }
 
-// Fixed isometric tower layout for the not-found ghost city.
 const GHOST_LAYOUT: { col: number; row: number; h: number }[] = [
   { col: 0, row: 0, h: 8 },
   { col: 1, row: 0, h: 20 },
@@ -1881,16 +1801,6 @@ const GHOST_LAYOUT: { col: number; row: number; h: number }[] = [
   { col: 7, row: 5, h: 6 },
 ];
 
-/**
- * Renders a list of ghost tower entries as isometric wireframe SVG paths.
- * Shared by generateNotFoundSVG and generateRateLimitSVG to avoid duplicated
- * ghost-city rendering logic. Any visual change to ghost tower geometry
- * (stroke widths, fill-opacity, coordinate math) only needs to happen here.
- *
- * @param layout - Array of {col, row, h} tower descriptors
- * @param accent - Hex color string (with #) for tower stroke and fill tint
- * @returns SVG string: a <g class="ghost-towers"> wrapping all tower groups
- */
 function renderGhostTowers(
   layout: { col: number; row: number; h: number }[],
   accent: string
@@ -2143,26 +2053,8 @@ function generateAutoThemeVersusSVG(
     sf
   );
 
-  const towers1 = renderTowers(
-    towerData1,
-    params,
-    '',
-    '',
-    sf,
-    true,
-    params.opacity ?? 1.0,
-    params.animate ?? true
-  );
-  const towers2 = renderTowers(
-    towerData2,
-    params,
-    '',
-    '',
-    sf,
-    true,
-    params.opacity ?? 1.0,
-    params.animate ?? true
-  );
+  const towers1 = renderTowers(towerData1, params, '', '', sf, true, params.opacity ?? 1.0);
+  const towers2 = renderTowers(towerData2, params, '', '', sf, true, params.opacity ?? 1.0);
 
   const s = createScaler(sf);
   const fs = (n: number): number => Math.round(n * sf * 10) / 10;
@@ -2268,7 +2160,6 @@ export function generatePulseSVG(
   const width = params.width || 800;
   const height = params.height || 170;
 
-  // Extract the last 30 days of contributions
   const days: number[] = [];
   calendar.weeks.forEach((week) => {
     week.contributionDays.forEach((day) => {
@@ -2775,21 +2666,18 @@ export function generateLanguagesSVG(
     .sort((a, b) => b.percentage - a.percentage)
     .slice(0, 5);
 
-  // We use custom isometric pixel coordinates from a center origin
-  // to spread the 5 towers across the canvas.
-  const TOWER_SCALE = 2.5; // Make the 5 language towers much larger than daily contribution tiles
+  const TOWER_SCALE = 2.5;
   const V_SHAPE_COORDS = [
-    { x: 0, y: 0, zIndex: 3 }, // 1st (Center, Front)
-    { x: -80, y: -45, zIndex: 2 }, // 2nd (Left, Mid)
-    { x: 80, y: -45, zIndex: 2 }, // 3rd (Right, Mid)
-    { x: -160, y: -90, zIndex: 1 }, // 4th (Far Left, Back)
-    { x: 160, y: -90, zIndex: 1 }, // 5th (Far Right, Back)
+    { x: 0, y: 0, zIndex: 3 },
+    { x: -80, y: -45, zIndex: 2 },
+    { x: 80, y: -45, zIndex: 2 },
+    { x: -160, y: -90, zIndex: 1 },
+    { x: 160, y: -90, zIndex: 1 },
   ];
 
   let towersHtml = '';
   const maxPercent = languages[0]?.percentage || 100;
 
-  // Sort languages by zIndex so we render back-to-front (painter's algorithm)
   const sortedLanguages = languages
     .map((lang, idx) => ({
       ...lang,
@@ -2798,15 +2686,13 @@ export function generateLanguagesSVG(
     .sort((a, b) => a.coord.zIndex - b.coord.zIndex);
 
   sortedLanguages.forEach((lang, idx) => {
-    // W and H are already scaled by sf, so we only scale the coordinate offsets
     const scaledX = W / 2 + lang.coord.x * sf;
     const scaledY = H / 2 + (50 + lang.coord.y) * sf;
     const h = Math.max(30, (lang.percentage / maxPercent) * 140) * sf;
 
-    // Use the centralized tower path builder for consistent isometric geometry
     const towerScale = TOWER_SCALE * sf;
     const paths = buildTowerPaths(h, towerScale);
-    const th = 10 * towerScale; // half-height, used for text label positioning
+    const th = 10 * towerScale;
 
     const hexColor = lang.color.startsWith('#') ? lang.color : `#${lang.color}`;
     const delay = (idx * 0.15).toFixed(3);
