@@ -1493,6 +1493,62 @@ describe('streakParamsSchema — layout query validation boundaries (Variation 4
   });
 });
 
+describe('streakParamsSchema — gradient_stops DoS protection', () => {
+  it('accepts a short valid gradient_stops value', () => {
+    const result = streakParamsSchema.safeParse({
+      user: 'octocat',
+      gradient_stops: 'ff6b35,7000ff',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts a gradient_stops value exactly at 200 characters', () => {
+    // Build a 200-char string of valid comma-separated hex codes
+    const stops200 = Array.from({ length: 28 }, () => 'ff6b35').join(','); // 28*6 + 27 commas = 195 chars, pad to 200
+    const padded = stops200 + ',f0f'; // 195 + 4 = 199 chars — just under limit
+    expect(padded.length).toBeLessThanOrEqual(200);
+    const result = streakParamsSchema.safeParse({
+      user: 'octocat',
+      gradient_stops: padded,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects gradient_stops longer than 200 characters', () => {
+    const oversized = 'a'.repeat(201);
+    const result = streakParamsSchema.safeParse({
+      user: 'octocat',
+      gradient_stops: oversized,
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const msg = result.error.flatten().fieldErrors.gradient_stops?.[0];
+      expect(msg).toBe('gradient_stops cannot exceed 200 characters');
+    }
+  });
+
+  it('rejects a multi-megabyte gradient_stops string', () => {
+    const huge = 'ff0000,'.repeat(50000); // ~350 KB
+    const result = streakParamsSchema.safeParse({
+      user: 'octocat',
+      gradient_stops: huge,
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const msg = result.error.flatten().fieldErrors.gradient_stops?.[0];
+      expect(msg).toBe('gradient_stops cannot exceed 200 characters');
+    }
+  });
+
+  it('accepts gradient_stops as undefined (optional field)', () => {
+    const result = streakParamsSchema.safeParse({ user: 'octocat' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.gradient_stops).toBeUndefined();
+    }
+  });
+});
+
 /* ==========================================================================
  * DATE PARAMETER — QUERY VALIDATION BOUNDARIES (VARIATION 2)
  * ========================================================================== */
