@@ -82,6 +82,7 @@ export interface DashboardData {
   };
   popularRepos?: Repository[];
   pinnedRepos?: Repository[];
+  starredRepos?: Repository[];
   hallOfFame?: HallOfFameAward[];
 }
 
@@ -108,18 +109,6 @@ export interface CoderProfile {
 
 /**
  * Generates a coder profile based on available metrics.
- *
- * NOTE: Night Owl classification via hourlyData is NOT IMPLEMENTED.
- * GitHub's REST API only provides daily contribution granularity. Fetching hourly data
- * would require querying individual commits across all repositories, which is:
- * - Prohibitively expensive in latency (100s-1000s of requests per user)
- * - Infeasible within serverless function timeout constraints (~10 seconds)
- * - Not required for daily activity visualization use cases
- *
- * Instead, we classify developers into 3 profile types:
- * - Consistent Runner: High daily commit frequency (streak >= 10)
- * - Weekend Warrior: Most commits occur on weekends (>35% of commits)
- * - Early Builder: Default for other patterns
  */
 export function generateCoderProfile(metrics: ProfileMetrics): CoderProfile {
   const { currentStreak, commitClock } = metrics;
@@ -144,7 +133,6 @@ export function generateCoderProfile(metrics: ProfileMetrics): CoderProfile {
   }
 
   // 3. Populate UI properties based on the derived profile.
-  // We use smooth curves here without the random 'hash' jitter for a cleaner UI.
   let peakHourStart = 9;
   let peakHourEnd = 17;
   let hourlyDistribution = new Array(24).fill(0);
@@ -601,6 +589,12 @@ export default function DashboardClient({
                 </svg>
                 Profile Optimizer
               </button>
+              <Link
+                href={`/achievements?username=${username}`}
+                className="flex items-center gap-2 rounded-xl border border-black/10 dark:border-[rgba(255,255,255,0.15)] bg-black dark:bg-[#111] hover:bg-zinc-800 dark:hover:bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:text-white transition-all duration-200 active:scale-[0.98]"
+              >
+                🏆 Achievements
+              </Link>
               <button
                 ref={triggerRef}
                 onClick={handleOpenModal}
@@ -742,6 +736,7 @@ export default function DashboardClient({
             <PopularRepos
               popularRepos={initialData.popularRepos || []}
               pinnedRepos={initialData.pinnedRepos || []}
+              starredRepos={initialData.starredRepos || []}
             />
 
             <InactiveRepoReminder repos={allRepoActivity} />
@@ -754,6 +749,7 @@ export default function DashboardClient({
         </div>
       ) : (
         <div className="flex flex-col gap-8">
+          {/* Compare profile code blocks preserve standard layouts */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
             <div className="relative">
               <ProfileCard

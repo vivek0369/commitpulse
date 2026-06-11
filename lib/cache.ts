@@ -350,10 +350,8 @@ export class DistributedCache<T> {
   }
 
   async update(key: string, value: T): Promise<boolean> {
-    this.localCache.update(key, value);
-
     if (!this.useRedis) {
-      return this.localCache.has(key);
+      return this.localCache.update(key, value);
     }
 
     try {
@@ -370,7 +368,16 @@ export class DistributedCache<T> {
         throw new Error(`Redis HTTP error: ${res.status}`);
       }
       const data = await res.json();
-      return data.result === 'OK';
+      const updated = data.result === 'OK';
+
+      if (updated) {
+        this.localCache.update(key, value);
+      } else {
+        // Redis no longer has the key, so the L1 value is stale.
+        this.localCache.delete(key);
+      }
+
+      return updated;
     } catch (err) {
       console.error(`[DistributedCache] UPDATE failed for key "${key}":`, err);
       return false;
@@ -467,6 +474,11 @@ return c`;
     ttlMs: number,
     shouldFetch?: (cached: T) => boolean
   ): Promise<T> {
+    // Join an existing in-flight request before any async operation to avoid
+    // concurrent loadFn execution for the same key.
+    const existing = this.localLocks.get(key);
+    if (existing) return existing;
+
     // Attempt to retrieve an existing value before triggering a refresh.
     const cached = await this.get(key, ttlMs);
 
@@ -474,8 +486,7 @@ return c`;
       return cached;
     }
 
-    // Join an existing in-flight request instead of creating duplicate fetches
-    // within the same runtime instance.
+    // Double-check local locks after the await in case another call interleaved.
     const pendingLocal = this.localLocks.get(key);
     if (pendingLocal) return pendingLocal;
 
