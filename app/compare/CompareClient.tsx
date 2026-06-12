@@ -1216,6 +1216,7 @@ export default function CompareClient() {
                 <input
                   id="compare-user1-input"
                   type="text"
+                  suppressHydrationWarning
                   placeholder="GitHub username #1"
                   aria-label="Enter first GitHub username to compare"
                   value={user1}
@@ -1244,6 +1245,7 @@ export default function CompareClient() {
                 <input
                   id="compare-user2-input"
                   type="text"
+                  suppressHydrationWarning
                   placeholder="GitHub username #2"
                   aria-label="Enter second GitHub username to compare"
                   value={user2}
