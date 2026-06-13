@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET } from './route';
+import type { ContributionCalendar } from '../../../types';
 
 vi.mock('../../../lib/github', () => ({
   fetchGitHubContributions: vi.fn(),
@@ -73,7 +74,7 @@ describe('GET /api/stats - Edge Cases & Empty/Missing Inputs Verification', () =
 
   it('handles a completely null calendar object gracefully', async () => {
     vi.mocked(fetchGitHubContributions).mockResolvedValue({
-      calendar: null as any,
+      calendar: null as unknown as ContributionCalendar,
       repoContributions: [],
     });
 
@@ -92,7 +93,7 @@ describe('GET /api/stats - Edge Cases & Empty/Missing Inputs Verification', () =
     vi.mocked(fetchGitHubContributions).mockResolvedValue({
       calendar: {
         totalContributions: 0,
-        weeks: undefined as any,
+        weeks: undefined as unknown as ContributionCalendar['weeks'],
       },
       repoContributions: [],
     });
