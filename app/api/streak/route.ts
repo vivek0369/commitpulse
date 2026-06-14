@@ -117,6 +117,8 @@ export async function GET(request: Request) {
       label,
       badges,
       entrance,
+      theta,
+      phi,
     } = parseResult.data;
     const normalizedView = view as
       | 'default'
@@ -283,6 +285,8 @@ export async function GET(request: Request) {
       label,
       badges,
       entrance,
+      theta,
+      phi,
     };
 
     let calendar;
