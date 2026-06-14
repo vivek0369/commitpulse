@@ -6,23 +6,20 @@ import { getClientIp } from './utils/getClientIp';
 /**
  * Middleware to enforce rate limiting on specific API routes.
  *
- * Protected Routes:
- * - /api/streak
- * - /api/github
- * - /api/track-user
- * - /api/stats
- * - /api/og
- * - /api/notify
- * - /api/compare
+ * Next.js requires this file to be named `middleware.ts` at the project root
+ * and to export a function named `middleware` (and optionally `config`).
  *
- * Limit: 60 requests per minute per IP.
+ * @see https://nextjs.org/docs/app/building-your-application/routing/middleware
  */
 export async function middleware(request: NextRequest) {
-  // Secure client IP extraction
-  const ip = getClientIp(request);
+  const directIp =
+    (request as unknown as { ip?: string }).ip ||
+    request.headers.get('x-forwarded-for')?.split(',')[0] ||
+    request.headers.get('x-real-ip') ||
+    '127.0.0.1';
 
-  // Apply rate limiting
-  // 60 requests per 60,000ms (1 minute)
+  const ip = getClientIp(request, { directIp });
+
   const result = await rateLimit(ip, 60, 60000);
 
   if (!result.success) {
@@ -40,7 +37,6 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  // Add rate limit headers to the response for successful requests
   const response = NextResponse.next();
   response.headers.set('X-RateLimit-Limit', result.limit.toString());
   response.headers.set('X-RateLimit-Remaining', result.remaining.toString());
@@ -50,8 +46,8 @@ export async function middleware(request: NextRequest) {
 }
 
 /**
- * Configure which routes should trigger this middleware.
- * Using a matcher is more efficient than checking pathnames inside the middleware.
+ * Configure which routes should trigger this proxy.
+ * Using a matcher is more efficient than checking pathnames inside the proxy.
  */
 export const config = {
   matcher: [
@@ -62,5 +58,8 @@ export const config = {
     '/api/og/:path*',
     '/api/notify/:path*',
     '/api/compare/:path*',
+    '/api/wrapped/:path*',
+    '/api/student/:path*',
+    '/api/pr-insights/:path*',
   ],
 };
