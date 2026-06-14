@@ -445,7 +445,9 @@ function renderTowers(
   const dx_sf = rnd(dx * sf);
   const dy_sf = rnd(dy * sf);
 
-  for (const t of towerData) {
+  const sortedTowers = [...towerData].sort((a, b) => a.row + a.col - (b.row + b.col));
+
+  for (const t of sortedTowers) {
     const isGhost = t.isGhost;
     let strokeColor = '';
     let leftRightFillAttr = '';
