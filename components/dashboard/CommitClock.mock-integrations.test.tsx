@@ -2,60 +2,87 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import React from 'react';
-import CommitClock from './CommitClock';
 
 vi.mock('framer-motion', async () => {
   const React = await import('react');
 
-  const stripMotionProps = (props: Record<string, unknown>) => {
-    const {
-      whileHover,
-      whileTap,
-      whileInView,
-      initial,
-      animate,
-      exit,
-      transition,
-      variants,
-      viewport,
-      ...rest
-    } = props;
+  const motionProps = new Set([
+    'whileHover',
+    'whileTap',
+    'whileInView',
+    'initial',
+    'animate',
+    'exit',
+    'variants',
+    'transition',
+    'viewport',
+    'drag',
+    'layout',
+    'layoutId',
+  ]);
 
-    return rest;
+  const stripMotionProps = (props: Record<string, unknown>) =>
+    Object.fromEntries(Object.entries(props).filter(([key]) => !motionProps.has(key)));
+
+  const createMotionComponent = (tag: string) => {
+    const Component = ({
+      children,
+      ...props
+    }: React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode }) =>
+      React.createElement(tag, stripMotionProps(props), children);
+
+    Component.displayName = `Motion${tag}`;
+
+    return Component;
   };
 
   return {
     motion: {
-      div: ({ children, ...props }: any) =>
-        React.createElement('div', stripMotionProps(props), children),
+      div: createMotionComponent('div'),
+      span: createMotionComponent('span'),
+      p: createMotionComponent('p'),
+      a: createMotionComponent('a'),
+      button: createMotionComponent('button'),
+      section: createMotionComponent('section'),
+      article: createMotionComponent('article'),
+      header: createMotionComponent('header'),
+      footer: createMotionComponent('footer'),
+      main: createMotionComponent('main'),
+      nav: createMotionComponent('nav'),
+      ul: createMotionComponent('ul'),
+      li: createMotionComponent('li'),
+      h1: createMotionComponent('h1'),
+      h2: createMotionComponent('h2'),
+      h3: createMotionComponent('h3'),
+      h4: createMotionComponent('h4'),
+      h5: createMotionComponent('h5'),
+      h6: createMotionComponent('h6'),
 
-      g: ({ children, ...props }: any) =>
-        React.createElement('g', stripMotionProps(props), children),
+      svg: createMotionComponent('svg'),
+      g: createMotionComponent('g'),
+      path: createMotionComponent('path'),
+      circle: createMotionComponent('circle'),
+      line: createMotionComponent('line'),
+
+      img: createMotionComponent('img'),
     },
 
-    AnimatePresence: ({ children }: any) => children,
+    AnimatePresence: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+
+    useReducedMotion: () => false,
+
+    useMotionValue: (initial = 0) => ({
+      get: () => initial,
+      set: vi.fn(),
+      on: vi.fn(),
+      destroy: vi.fn(),
+    }),
+
+    useSpring: (value: unknown) => value,
+    useTransform: (value: unknown) => value,
   };
 });
-
-// 1. Mock Next.js router
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
-  useSearchParams: () => new URLSearchParams(),
-}));
-
-// 2. Prevent recharts from crashing the JSDOM environment
-vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
-  RadarChart: () => <div />,
-  PolarGrid: () => <div />,
-  PolarAngleAxis: () => <div />,
-  PolarRadiusAxis: () => <div />,
-  Radar: () => <div />,
-  PieChart: () => <div />,
-  Pie: () => <div />,
-  Cell: () => <div />,
-  Tooltip: () => <div />,
-}));
+import CommitClock from './CommitClock';
 
 // 3. Mock IntersectionObserver as a CLASS so Framer Motion can call 'new' on it
 class MockIntersectionObserver {
