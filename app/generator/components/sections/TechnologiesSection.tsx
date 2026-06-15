@@ -32,14 +32,12 @@ function TechIcon({ tech, isDark }: { tech: Technology; isDark: boolean }) {
   );
 }
 
-export function TechnologiesSection({ selected, onChange }: TechnologiesSectionProps) {
+export function TechnologiesSection({ selected = [], onChange }: TechnologiesSectionProps) {
   const safeSelected = Array.isArray(selected) ? selected : [];
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [recCategory, setRecCategory] = useState<string>('All');
   const [expandedRecs, setExpandedRecs] = useState<string[]>([]);
-
-  const safeSelected = selected || [];
 
   const isDark = false;
 
