@@ -37,7 +37,7 @@ export const themes: Record<string, BadgeTheme> = {
   glacier: makeTheme('e0f2fe', '0369a1', '06b6d4', 'ef4444'),
   lumos: makeTheme('0a0a0a', 'a7f3d0', 'fbbf24', 'ef4444'),
   tokyonight: makeTheme('1a1b26', 'c0caf5', 'f7768e'),
-  cyberpunk: makeTheme('fce22a', '111111', 'ff003c'),
+  cyberpunk: makeTheme('fce22a', '111111', 'ff003c', '2d0000'),
   tokyo_night: makeTheme('1a1b26', 'c0caf5', '7aa2f7'),
   monokai: makeTheme('272822', 'f8f8f2', 'a6e22e', 'f92672'),
   midnight_ocean: makeTheme('020c1b', 'ccd6f6', '0af5ff', 'ff4d6d'),
