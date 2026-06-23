@@ -107,7 +107,7 @@ export default function DownloadReportMenu({ report }: { report: BurnoutReport }
             transition={{ duration: 0.15 }}
             className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#111] border border-black/10 dark:border-white/10 rounded-xl shadow-lg overflow-hidden z-50"
           >
-            <div className="p-1 flex flex-col bg-[#000000]">
+            <div className="p-1 flex flex-col">
               <button
                 onClick={handleDownloadMd}
                 className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
