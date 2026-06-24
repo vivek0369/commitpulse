@@ -206,12 +206,9 @@ export function calculateStreak(
       // Issue #6171:
       // only reject when today is missing AND gap > grace
       if (gapDays > Math.max(1, grace)) {
-        return {
-          currentStreak: 0,
-          longestStreak,
-          totalContributions: calendar.totalContributions || 0,
-          todayDate: localTodayStr,
-        };
+        todayIndex = -1;
+      } else {
+        todayIndex = lastIndex;
       }
 
       todayIndex = lastIndex;
