@@ -17,14 +17,13 @@ export class SyncQueue {
     if (process.env.NODE_ENV === 'test') {
       void task().catch((error) => {
         console.error('[SyncQueue] Task failed during test:', error);
-
-        process.nextTick(() => {
-          throw error;
-        });
       });
 
       return;
     }
+
+    this.queue.push(task);
+    this.processNext();
   }
 
   private async processNext(): Promise<void> {
