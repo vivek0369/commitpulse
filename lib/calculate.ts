@@ -387,7 +387,7 @@ export function aggregateCalendars(
   const dateMap = new Map<string, number>();
 
   // Find the calendar with the most weeks to serve as our structural base
-  let baseCalendar = calendars[0];
+  let baseCalendar = calendars.find((c) => c?.weeks?.length) ?? calendars[0];
   for (const cal of calendars) {
     if (!cal) continue;
     if ((cal.weeks?.length || 0) > (baseCalendar?.weeks?.length || 0)) {
@@ -422,37 +422,6 @@ export function aggregateCalendars(
     });
   });
 
-  const existingDates = new Set<string>();
-
-  (aggregatedBase.weeks || []).forEach((week) => {
-    (week?.contributionDays || []).forEach((day) => {
-      if (day && day.date) {
-        existingDates.add(day.date);
-      }
-    });
-  });
-
-  const missingDays: ContributionDay[] = [];
-
-  for (const [date, contributionCount] of dateMap.entries()) {
-    if (!existingDates.has(date)) {
-      missingDays.push({
-        date,
-        contributionCount,
-      });
-    }
-  }
-
-  missingDays.sort((a, b) => a.date.localeCompare(b.date));
-
-  if (!aggregatedBase.weeks) {
-    aggregatedBase.weeks = [];
-  }
-  for (const day of missingDays) {
-    aggregatedBase.weeks.push({
-      contributionDays: [day],
-    });
-  }
   return aggregatedBase;
 }
 
