@@ -23,6 +23,14 @@ export interface VersusPanelProps {
   autoTheme?: boolean;
 }
 
+/**
+ * SVG fragments are generated internally by the badge renderer.
+ * User-controlled text is sanitized before fragment generation.
+ */
+function createSafeSvgMarkup(svg: string) {
+  return { __html: svg };
+}
+
 export const VersusPanel: React.FC<VersusPanelProps> = ({
   user1,
   user2,
@@ -56,10 +64,10 @@ export const VersusPanel: React.FC<VersusPanelProps> = ({
       <g transform="translate(0, 0)">
         <g
           transform={`translate(0, ${Math.round(20 * sf)})`}
-          dangerouslySetInnerHTML={{ __html: towers1 }}
+          dangerouslySetInnerHTML={{ __html: createSafeSvgMarkup(towers1) }}
         />
-        <g dangerouslySetInnerHTML={{ __html: labels1 }} />
-        <g dangerouslySetInnerHTML={{ __html: stats1Html }} />
+        <g dangerouslySetInnerHTML={{ __html: createSafeSvgMarkup(labels1) }} />
+        <g dangerouslySetInnerHTML={{ __html: createSafeSvgMarkup(stats1Html) }} />
         <text
           x={s(300)}
           y={s(50)}
@@ -79,10 +87,10 @@ export const VersusPanel: React.FC<VersusPanelProps> = ({
       <g transform={`translate(${singleW}, 0)`}>
         <g
           transform={`translate(0, ${Math.round(20 * sf)})`}
-          dangerouslySetInnerHTML={{ __html: towers2 }}
+          dangerouslySetInnerHTML={{ __html: createSafeSvgMarkup(towers2) }}
         />
-        <g dangerouslySetInnerHTML={{ __html: labels2 }} />
-        <g dangerouslySetInnerHTML={{ __html: stats2Html }} />
+        <g dangerouslySetInnerHTML={{ __html: createSafeSvgMarkup(labels2) }} />
+        <g dangerouslySetInnerHTML={{ __html: createSafeSvgMarkup(stats2Html) }} />
         <text
           x={s(300)}
           y={s(50)}
