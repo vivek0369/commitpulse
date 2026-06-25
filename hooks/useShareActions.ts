@@ -181,7 +181,7 @@ export function useShareActions(
     setOptionState('png', 'loading');
 
     // Defer the heavy DOM capture to let the UI paint the loading state
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     try {
       const node =
@@ -216,7 +216,7 @@ export function useShareActions(
     setOptionState('webp', 'loading');
 
     // Defer the heavy DOM capture to let the UI paint the loading state
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     try {
       const node =
@@ -252,7 +252,7 @@ export function useShareActions(
     setOptionState('copyImage', 'loading');
 
     // Defer the heavy DOM capture to let the UI paint the loading state
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     try {
       if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
