@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { DELETE } from './route';
+import { Notification } from '@/models/Notification';
 
 vi.mock('@/lib/mongodb', () => ({
   default: vi.fn(),
@@ -33,8 +34,8 @@ function makeRequest(query: string): NextRequest {
 }
 
 beforeEach(() => {
-  process.env.MONGODB_URI = 'mongodb://localhost:27017/test';
-  process.env.NODE_ENV = 'test';
+  vi.stubEnv('MONGODB_URI', 'mongodb://localhost:27017/test');
+  vi.stubEnv('NODE_ENV', 'test');
 });
 
 afterEach(() => {
